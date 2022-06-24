@@ -265,9 +265,9 @@ func (d *dashEscaper) Write(data []byte) (n int, err error) {
 	return
 }
 
-func (d *dashEscaper) Close() (err error) {
+func (d *dashEscaper) Close() (rerr error) {
 	if !d.atBeginningOfLine {
-		if err = d.buffered.WriteByte(lf); err != nil {
+		if err := d.buffered.WriteByte(lf); err != nil {
 			return
 		}
 	}
@@ -276,6 +276,11 @@ func (d *dashEscaper) Close() (err error) {
 	if err != nil {
 		return
 	}
+	defer func() {
+		if rerr != nil {
+			out.Close()
+		}
+	}()
 
 	t := d.config.Now()
 	for i, k := range d.privateKeys {
@@ -297,10 +302,7 @@ func (d *dashEscaper) Close() (err error) {
 	if err = out.Close(); err != nil {
 		return
 	}
-	if err = d.buffered.Flush(); err != nil {
-		return
-	}
-	return
+	return d.buffered.Flush()
 }
 
 // Encode returns a WriteCloser which will clear-sign a message with privateKey
